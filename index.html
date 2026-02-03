@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kiss Day | Air Kiss Velocity</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@300;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --kiss-pink: #ffafbd;
+            --kiss-red: #ffc3a0;
+            --soft-white: rgba(255, 255, 255, 0.9);
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to top, #ffafbd 0%, #ffc3a0 100%);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #canvas-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .scene {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Dancing Script', cursive;
+            font-size: 3.5rem;
+            color: rgb(44, 22, 70);
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin: 0;
+        }
+
+        .hint {
+            color: rgb(255, 0, 179);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
+        /* Iridescent Bubble Styles */
+        .bubble {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(2px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: transform 0.1s;
+        }
+
+        /* YOUR CUSTOM SPACE */
+        #custom-kiss-space {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            display: none;
+            /* Revealed after swipes */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .mwah-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: 4rem;
+            color: rgb(255, 0, 0);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div class="scene" id="main-scene">
+        <div id="intro">
+            <h1>Air Kisses</h1>
+            <p class="hint">SWIPE THE BUBBLES UP TO SEND LUV</p>
+        </div>
+
+        <div id="custom-kiss-space">
+            <div style="font-size: 5rem;">💋</div>
+            <div class="mwah-text">MMUUUWWAAAAHHH!</div>
+            <p>Let All Of Your Kisses Be Mine And Only Mine...</p>
+        </div>
+    </div>
+
+    <audio id="kissSound">
+        <source src="WhatsApp Ptt 2026-02-03 at 12.53.50 PM.ogg" type="audio/mpeg">
+    </audio>
+
+    <script>
+        let burstCount = 0;
+        const totalNeeded = 10;
+        const scene = document.getElementById('main-scene');
+        const customSpace = document.getElementById('custom-kiss-space');
+
+        // Create Bubbles
+        function createBubble() {
+            if (burstCount >= totalNeeded) return;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.innerHTML = '✨';
+
+            const startX = Math.random() * (window.innerWidth - 60);
+            bubble.style.left = startX + 'px';
+            bubble.style.top = window.innerHeight + 'px';
+
+            scene.appendChild(bubble);
+
+            // Animate Floating Up
+            let pos = window.innerHeight;
+            const speed = 1 + Math.random() * 2;
+
+            const float = setInterval(() => {
+                pos -= speed;
+                bubble.style.top = pos + 'px';
+
+                if (pos < -100) {
+                    clearInterval(float);
+                    bubble.remove();
+                    if (burstCount < totalNeeded) createBubble();
+                }
+            }, 16);
+
+            // Swipe Detection
+            let startY = 0;
+            bubble.addEventListener('touchstart', (e) => startY = e.touches[0].clientY);
+            bubble.addEventListener('touchend', (e) => {
+                let endY = e.changedTouches[0].clientY;
+                if (startY - endY > 50) { // Upward swipe
+                    popBubble(bubble, float);
+                }
+            });
+
+            // Mouse Fallback
+            bubble.addEventListener('mousedown', () => popBubble(bubble, float));
+        }
+
+        function popBubble(el, interval) {
+            clearInterval(interval);
+            burstCount++;
+
+            // Sound
+            const snd = document.getElementById('kissSound');
+            snd.currentTime = 0;
+            snd.play();
+
+            // Visual Burst
+            confetti({
+                particleCount: 20,
+                spread: 60,
+                origin: {
+                    x: el.offsetLeft / window.innerWidth,
+                    y: el.offsetTop / window.innerHeight
+                },
+                colors: ['#ffffff', '#ff4d4d']
+            });
+
+            el.style.transform = 'scale(2)';
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 200);
+
+            if (burstCount === totalNeeded) {
+                revealFinal();
+            } else {
+                createBubble();
+            }
+        }
+
+        function revealFinal() {
+            document.getElementById('intro').style.opacity = '0';
+
+            setTimeout(() => {
+                document.getElementById('intro').style.display = 'none';
+                customSpace.style.display = 'flex';
+
+                confetti({
+                    particleCount: 200,
+                    spread: 100,
+                    origin: { y: 0.6 },
+                    colors: ['#ff4d4d', '#ffffff']
+                });
+            }, 500);
+        }
+
+        // Initialize first few bubbles
+        for (let i = 0; i < 4; i++) {
+            setTimeout(createBubble, i * 1000);
+        }
+    </script>
+</body>
+
+</html>
